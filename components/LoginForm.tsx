@@ -22,23 +22,23 @@ export function LoginForm() {
   const handleLogin = async () => {
     setLoading(true)
     setMessage("")
-
+  
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: "http://localhost:3000/auth/callback",
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
     })
-
+  
     if (error) {
       setMessage(error.message)
     } else {
       setMessage("Check your email for the login link.")
     }
-
+  
     setLoading(false)
   }
-
+  
   return (
     <div className="w-full max-w-sm space-y-4">
       <h1 className="text-2xl font-semibold text-center">Login</h1>
