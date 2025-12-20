@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import Link from "next/link"
 import { supabase } from "@/lib/supabaseClient"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -35,10 +36,7 @@ function calculateRisk(score: number): "Low" | "Medium" | "High" {
 /* -----------------------------
    Time-based Score Decay
 ------------------------------ */
-function applyScoreDecay(
-  score: number,
-  createdAt: string
-): number {
+function applyScoreDecay(score: number, createdAt: string): number {
   const createdDate = new Date(createdAt)
   const now = new Date()
 
@@ -187,8 +185,18 @@ export function EmployeesClient() {
           <tbody>
             {employees.map((emp) => (
               <tr key={emp.id} className="border-t">
-                <td className="px-4 py-3">{emp.email}</td>
+                {/* ✅ CLICKABLE EMAIL */}
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/employees/${emp.id}`}
+                    className="text-blue-600 hover:underline"
+                  >
+                    {emp.email}
+                  </Link>
+                </td>
+
                 <td className="px-4 py-3">{emp.score}</td>
+
                 <td className="px-4 py-3">
                   <Badge
                     variant={
