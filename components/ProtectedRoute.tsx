@@ -34,9 +34,18 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
       // 🚫 Employee trying to access HR pages
       if (
         profile.role === "employee" &&
-        pathname.startsWith("/dashboard")
+        pathname.startsWith("/hr")
       ) {
-        router.replace(`/employees/${profile.employee_id}`)
+        router.replace(`/employee/dashboard/${profile.employee_id}`)
+        return
+      }
+
+      // 🚫 HR trying to access employee pages
+      if (
+        profile.role === "hr" &&
+        pathname.startsWith("/employee")
+      ) {
+        router.replace(`/dashboard`)
         return
       }
 

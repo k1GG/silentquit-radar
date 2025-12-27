@@ -1,0 +1,52 @@
+import { redirect } from "next/navigation"
+import { createServerClient } from "@supabase/ssr"
+import { cookies } from "next/headers"
+
+export default async function HRCallbackPage() {
+  const cookieStore = await cookies()
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) {
+          return cookieStore.get(name)?.value
+        },
+        set(name: string, value: string, options: any) {
+          cookieStore.set({ name, value, ...options })
+        },
+        remove(name: string, options: any) {
+          cookieStore.set({ name, value: '', ...options })
+        },
+      },
+    }
+  )
+
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  console.log('HR-CALLBACK: Session data:', session ? 'exists' : 'null', 'Error:', sessionError)
+
+  if (!session) {
+    console.log('HR-CALLBACK: No session, redirecting to /hr-login')
+    redirect('/hr-login')
+  }
+
+  console.log('HR-CALLBACK: User ID:', session.user.id)
+
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', session.user.id)
+    .single()
+
+  console.log('HR-CALLBACK: Profile data:', profile, 'Error:', profileError)
+
+  if (!profile || profile.role !== 'hr') {
+    console.log('HR-CALLBACK: Invalid profile or not HR, signing out and redirecting to /hr-login')
+    await supabase.auth.signOut()
+    redirect('/hr-login')
+  }
+
+  console.log('HR-CALLBACK: Redirecting HR to /hr/dashboard')
+  redirect('/hr/dashboard')
+}

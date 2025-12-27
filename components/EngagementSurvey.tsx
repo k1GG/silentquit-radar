@@ -1,56 +1,86 @@
 "use client"
 
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 
-export function EngagementSurvey({ employeeId }: { employeeId: string }) {
-  const [q1, setQ1] = useState(3)
-  const [q2, setQ2] = useState(3)
-  const [q3, setQ3] = useState(3)
-  const [submitted, setSubmitted] = useState(false)
+const questions = [
+  "I feel valued at work",
+  "I have opportunities for growth",
+  "My work is meaningful",
+  "I receive adequate support",
+  "I am satisfied with my compensation"
+]
+
+export function EngagementSurvey() {
+  const router = useRouter()
+  const [answers, setAnswers] = useState<number[]>([3, 3, 3, 3, 3])
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const submitSurvey = async () => {
-    await fetch("/api/survey/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ employee_id: employeeId, q1, q2, q3 }),
-    })
-
-    setSubmitted(true)
-  }
-
-  if (submitted) {
-    return (
-      <p className="text-green-600">
-        Thank you! Your feedback has been recorded.
-      </p>
-    )
+    setSubmitting(true)
+    setError(null)
+    try {
+      const response = await fetch("/api/survey/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q1: answers[0],
+          q2: answers[1],
+          q3: answers[2],
+          q4: answers[3],
+          q5: answers[4]
+        }),
+        credentials: 'include'
+      })
+      if (response.ok) {
+        router.push(`/employee/dashboard`)
+      } else {
+        const data = await response.json()
+        setError(data.error || "Submission failed")
+      }
+    } catch (err) {
+      setError("Network error")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   return (
     <div className="space-y-4">
-      <h2 className="text-xl font-semibold">Engagement Survey</h2>
+      <p className="text-sm text-muted-foreground">
+        Rate each statement from 1 (Strongly Disagree) to 5 (Strongly Agree)
+      </p>
 
-      {[q1, q2, q3].map((q, i) => (
-        <div key={i}>
-          <label>Question {i + 1}</label>
+      {questions.map((question, i) => (
+        <div key={i} className="space-y-2">
+          <label className="block font-medium">{question}</label>
           <input
             type="range"
             min={1}
             max={5}
-            value={q}
-            onChange={(e) =>
-              i === 0
-                ? setQ1(+e.target.value)
-                : i === 1
-                ? setQ2(+e.target.value)
-                : setQ3(+e.target.value)
-            }
+            value={answers[i]}
+            onChange={(e) => {
+              const newAnswers = [...answers]
+              newAnswers[i] = +e.target.value
+              setAnswers(newAnswers)
+            }}
+            className="w-full"
           />
+          <div className="flex justify-between text-xs text-muted-foreground">
+            <span>1</span>
+            <span>3</span>
+            <span>5</span>
+          </div>
         </div>
       ))}
 
-      <Button onClick={submitSurvey}>Submit Survey</Button>
+      {error && <p className="text-red-500">{error}</p>}
+
+      <Button onClick={submitSurvey} disabled={submitting}>
+        {submitting ? "Submitting..." : "Submit Survey"}
+      </Button>
     </div>
   )
 }
