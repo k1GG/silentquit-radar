@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { EngagementSurvey } from "@/components/EngagementSurvey"
 import { LogoutButton } from "@/components/LogoutButton"
+import { getRiskFromScore, getRiskLabel, getRiskColor } from "@/lib/engagementRisk"
 
 type Employee = {
   id: string
@@ -97,7 +98,7 @@ export default async function EmployeeDashboardPage() {
   const latestScore = scoreData
 
   const engagementScore = latestScore?.score
-  const riskLevel = latestScore?.risk_level
+  const riskLevel = engagementScore ? getRiskFromScore(engagementScore) : null
 
   return (
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
@@ -126,10 +127,10 @@ export default async function EmployeeDashboardPage() {
             <div className="flex items-center justify-center space-x-4">
               <div className="text-5xl font-bold">{engagementScore}%</div>
               <Badge variant={
-                riskLevel === "Low" ? "default" :
-                riskLevel === "Medium" ? "secondary" : "destructive"
+                getRiskColor(riskLevel!) === "green" ? "default" :
+                getRiskColor(riskLevel!) === "yellow" ? "secondary" : "destructive"
               }>
-                {riskLevel} Risk
+                {getRiskLabel(riskLevel!)}
               </Badge>
             </div>
           ) : (

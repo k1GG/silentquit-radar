@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useEffect, useState } from "react"
@@ -8,32 +7,40 @@ import { supabase } from "@/lib/supabaseClient"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { LogoutButton } from "@/components/LogoutButton"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
-import { getRiskFromScore, getRiskLabel, getRiskColor } from "@/lib/engagementRisk"
-import ActivateEngageValueModal from "@/components/ActivateEngageValueModal"
 
 type EmployeeWithScore = {
-    id: string
-    name: string
-    email: string
-    position: string
-    latest_score?: number
-    scoreDrop?: number
-    hasActiveAlert?: boolean
-    hasEngageValue?: boolean
-  }
+  id: string
+  name: string
+  email: string
+  position: string
+  latest_score?: number
+  risk_level?: string
+}
 
-export default function HrDashboardPage() {
-   const [employees, setEmployees] = useState<EmployeeWithScore[]>([])
-   const [loading, setLoading] = useState(true)
-   const [modalEmployee, setModalEmployee] = useState<EmployeeWithScore | null>(null)
-   const router = useRouter()
+function formatCurrency(amount: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+export default function HrDashboardClient() {
+  const [employees, setEmployees] = useState<EmployeeWithScore[]>([])
+  const [engageValueData, setEngageValueData] = useState<{
+    totalExpectedLoss: number
+    totalExpectedSavings: number
+  } | null>(null)
+  const [loading, setLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const checkAuthAndLoad = async () => {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) {
-        router.push("/login")
+        router.push("/")
         return
       }
 
@@ -44,8 +51,20 @@ export default function HrDashboardPage() {
         .single()
 
       if (!profile || profile.role !== 'hr') {
-        router.push("/login")
+        router.push("/")
         return
+      }
+
+      // Fetch EngageValue snapshots
+      const { data: snapshotsData, error: snapError } = await supabase
+        .from("engagement_roi_snapshots")
+        .select("estimated_attrition_cost, expected_savings")
+
+      if (!snapError && snapshotsData) {
+        console.log("EngageValue snapshots fetched:", snapshotsData)
+        const totalExpectedLoss = snapshotsData.reduce((sum, s) => sum + (s.estimated_attrition_cost || 0), 0)
+        const totalExpectedSavings = snapshotsData.reduce((sum, s) => sum + (s.expected_savings || 0), 0)
+        setEngageValueData({ totalExpectedLoss, totalExpectedSavings })
       }
 
       // Fetch employees
@@ -59,50 +78,31 @@ export default function HrDashboardPage() {
         return
       }
 
-      const today = new Date().toISOString().slice(0, 10)
-
-      // Fetch latest scores for each employee
+      // Fetch latest surveys for each employee
       const employeesWithScores: EmployeeWithScore[] = await Promise.all(
         (employeesData || []).map(async (emp) => {
-          // Get last two scores to calculate drop
-          const { data: scoresData } = await supabase
-            .from("engagement_scores")
-            .select("score")
+          const { data: surveyData } = await supabase
+            .from("engagement_surveys")
+            .select("q1, q2, q3, q4, q5")
             .eq("employee_id", emp.id)
             .order("created_at", { ascending: false })
-            .limit(2)
-
-          const latestScore = scoresData?.[0]?.score
-          const previousScore = scoresData?.[1]?.score
-          const scoreDrop = previousScore && latestScore ? Math.max(0, previousScore - latestScore) : 0
-
-          // Check for active alerts
-          const { data: activeAlert } = await supabase
-            .from("risk_alerts")
-            .select("id")
-            .eq("employee_id", emp.id)
-            .eq("resolved", false)
             .limit(1)
             .single()
 
-          const hasActiveAlert = !!activeAlert
-
-          // Check for EngageValue snapshot
-          const { data: snapshot } = await supabase
-            .from("engagement_roi_snapshots")
-            .select("id")
-            .eq("employee_id", emp.id)
-            .eq("created_date", today)
-            .single()
-
-          const hasEngageValue = !!snapshot
+          let latest_score: number | undefined
+          let risk_level: string | undefined
+          if (surveyData) {
+            const average = (surveyData.q1 + surveyData.q2 + surveyData.q3 + surveyData.q4 + surveyData.q5) / 5
+            latest_score = Math.round(average * 20)
+            if (latest_score >= 80) risk_level = "Low"
+            else if (latest_score >= 60) risk_level = "Medium"
+            else risk_level = "High"
+          }
 
           return {
             ...emp,
-            latest_score: latestScore,
-            scoreDrop,
-            hasActiveAlert,
-            hasEngageValue,
+            latest_score,
+            risk_level,
           }
         })
       )
@@ -124,19 +124,36 @@ export default function HrDashboardPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-semibold">HR Dashboard</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-semibold">HR Dashboard</h1>
+        <LogoutButton />
+      </div>
 
-      <Card className="border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-950/20">
+      {/* EngageValue Impact Card */}
+      <Card className="border-red-500/30">
         <CardHeader>
-          <CardTitle className="text-blue-900 dark:text-blue-100">💰 EngageValue™ – Attrition Cost & ROI</CardTitle>
+          <CardTitle>💰 EngageValue™ Impact</CardTitle>
         </CardHeader>
-        <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            Quantify attrition risk in real monetary terms and justify intervention ROI.
-          </p>
-          <Button asChild>
-            <Link href="/hr/dashboard/engagevalue">View Cost Impact</Link>
-          </Button>
+        <CardContent className="space-y-3">
+          {engageValueData ? (
+            <>
+              <p className="text-red-500 font-semibold">
+                Attrition Exposure: {formatCurrency(engageValueData.totalExpectedLoss)}
+              </p>
+              <p className="text-green-500 font-semibold">
+                Preventable Loss: {formatCurrency(engageValueData.totalExpectedSavings)}
+              </p>
+              <Button asChild className="w-full">
+                <Link href="/hr/dashboard/engagevalue">
+                  View EngageValue™ Details
+                </Link>
+              </Button>
+            </>
+          ) : (
+            <p className="text-muted-foreground">
+              EngageValue™ data will appear after employee engagement analysis
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -161,28 +178,16 @@ export default function HrDashboardPage() {
                 <div className="flex items-center space-x-4">
                   {employee.latest_score !== undefined ? (
                     <>
+                      <span className="font-semibold">{employee.latest_score}%</span>
                       <Badge variant={
-                        getRiskColor(getRiskFromScore(employee.latest_score)) === "green" ? "default" :
-                        getRiskColor(getRiskFromScore(employee.latest_score)) === "yellow" ? "secondary" : "destructive"
+                        employee.risk_level === "Low" ? "default" :
+                        employee.risk_level === "Medium" ? "secondary" : "destructive"
                       }>
-                        {employee.latest_score}% {getRiskLabel(getRiskFromScore(employee.latest_score))}
+                        {employee.risk_level} Risk
                       </Badge>
-                      {(() => {
-                        const risk = getRiskFromScore(employee.latest_score)
-                        return risk === "high" ? (
-                          <Badge variant="destructive">
-                            High Risk Alert
-                          </Badge>
-                        ) : null
-                      })()}
                     </>
                   ) : (
                     <span className="text-muted-foreground">No data</span>
-                  )}
-                  {!employee.hasEngageValue && (
-                    <Button size="sm" onClick={() => setModalEmployee(employee)}>
-                      ➕ Activate EngageValue™
-                    </Button>
                   )}
                   <Link href={`/hr/employee/${employee.id}`} className="text-blue-600 hover:underline">
                     View Details
@@ -210,14 +215,6 @@ export default function HrDashboardPage() {
           </ResponsiveContainer>
         </CardContent>
       </Card>
-
-      {modalEmployee && (
-        <ActivateEngageValueModal
-          employee={modalEmployee}
-          isOpen={!!modalEmployee}
-          onClose={() => setModalEmployee(null)}
-        />
-      )}
     </div>
   )
 }

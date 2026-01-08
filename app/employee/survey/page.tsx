@@ -46,7 +46,7 @@ export default function EmployeeSurveyPage() {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <h1 className="text-3xl font-semibold text-center mb-6">Engagement Survey</h1>
-      <EngagementSurvey employeeId={employeeId} />
+      <EngagementSurvey />
     </div>
   )
 }
