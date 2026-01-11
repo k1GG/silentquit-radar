@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import {
-  ChevronDownIcon,
+  ChevronDown,
   ChevronLeftIcon,
   ChevronRightIcon,
 } from 'lucide-react'
@@ -152,7 +152,7 @@ function Calendar({
           }
 
           return (
-            <ChevronDownIcon className={cn('size-4', className)} {...props} />
+            <ChevronDown className={cn('size-4', className)} {...props} />
           )
         },
         DayButton: CalendarDayButton,
