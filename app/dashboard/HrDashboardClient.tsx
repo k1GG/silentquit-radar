@@ -125,43 +125,45 @@ export default function HrDashboardClient() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold">HR Dashboard</h1>
+        <h1 className="text-3xl font-semibold text-white">HR Dashboard</h1>
         <LogoutButton />
       </div>
 
       {/* EngageValue Impact Card */}
-      <Card className="border-red-500/30">
+      <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle>💰 EngageValue™ Impact</CardTitle>
+          <CardTitle className="text-white">💰 EngageValue™ Impact</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="text-center space-y-4">
           {engageValueData ? (
             <>
-              <p className="text-red-500 font-semibold">
-                Attrition Exposure: {formatCurrency(engageValueData.totalExpectedLoss)}
-              </p>
-              <p className="text-green-500 font-semibold">
-                Preventable Loss: {formatCurrency(engageValueData.totalExpectedSavings)}
-              </p>
-              <Button asChild className="w-full">
+              <div>
+                <h2 className="text-4xl font-bold text-red-500">{formatCurrency(engageValueData.totalExpectedLoss)}</h2>
+                <p className="text-red-300">Attrition Exposure</p>
+              </div>
+              <div>
+                <h2 className="text-4xl font-bold text-green-500">{formatCurrency(engageValueData.totalExpectedSavings)}</h2>
+                <p className="text-green-300">Preventable Loss</p>
+              </div>
+              <Button asChild className="w-full bg-teal-600 hover:bg-teal-700 text-white">
                 <Link href="/hr/dashboard/engagevalue">
-                  View EngageValue™ Details
+                  View EngageValue™ Details →
                 </Link>
               </Button>
             </>
           ) : (
-            <p className="text-muted-foreground">
+            <p className="text-gray-400">
               EngageValue™ data will appear after employee engagement analysis
             </p>
           )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Employees</CardTitle>
-            <Button asChild>
+            <CardTitle className="text-white">Employees</CardTitle>
+            <Button asChild className="bg-teal-600 hover:bg-teal-700 text-white">
               <Link href="/hr/employees/new">Add Employee Detail</Link>
             </Button>
           </div>
@@ -169,48 +171,52 @@ export default function HrDashboardClient() {
         <CardContent>
           <div className="space-y-4">
             {employees.map((employee) => (
-              <div key={employee.id} className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex-1">
-                  <h3 className="font-semibold">{employee.name}</h3>
-                  <p className="text-sm text-muted-foreground">{employee.email}</p>
-                  <p className="text-sm">{employee.position}</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {employee.latest_score !== undefined ? (
-                    <>
-                      <span className="font-semibold">{employee.latest_score}%</span>
-                      <Badge variant={
-                        employee.risk_level === "Low" ? "default" :
-                        employee.risk_level === "Medium" ? "secondary" : "destructive"
-                      }>
-                        {employee.risk_level} Risk
-                      </Badge>
-                    </>
-                  ) : (
-                    <span className="text-muted-foreground">No data</span>
-                  )}
-                  <Link href={`/hr/employee/${employee.id}`} className="text-blue-600 hover:underline">
-                    View Details
-                  </Link>
-                </div>
-              </div>
+              <Card key={employee.id} className="bg-gray-700 border-gray-600">
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-white">{employee.name}</h3>
+                      <p className="text-sm text-gray-400">{employee.position}</p>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      {employee.latest_score !== undefined ? (
+                        <>
+                          <Badge className="bg-blue-600 text-white">{employee.latest_score}%</Badge>
+                          <Badge className={
+                            employee.risk_level === "Low" ? "bg-green-600" :
+                            employee.risk_level === "Medium" ? "bg-yellow-600" : "bg-red-600"
+                          }>
+                            {employee.risk_level} Risk
+                          </Badge>
+                        </>
+                      ) : (
+                        <span className="text-gray-400">No data</span>
+                      )}
+                      <Link href={`/hr/employee/${employee.id}`} className="text-teal-400 hover:text-teal-300">
+                        View Details →
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle>Engagement Scores</CardTitle>
+          <CardTitle className="text-white">Engagement Scores</CardTitle>
+          <p className="text-gray-400 text-sm">Latest engagement scores for all employees</p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-6">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={employees.map(emp => ({ name: emp.name, score: emp.latest_score || 0 }))}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" />
-              <YAxis />
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+              <XAxis dataKey="name" stroke="#9ca3af" />
+              <YAxis stroke="#9ca3af" />
               <Tooltip />
-              <Bar dataKey="score" fill="#8884d8" />
+              <Bar dataKey="score" fill="#14b8a6" />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>

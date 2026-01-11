@@ -162,9 +162,9 @@ export default function EngageValuePage() {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-semibold">EngageValue™ Impact</h1>
-        <p>Loading...</p>
+      <div className="min-h-screen bg-gray-900 text-white p-6">
+        <h1 className="text-3xl font-semibold text-white">EngageValue™ Impact</h1>
+        <p className="text-gray-400">Loading...</p>
       </div>
     )
   }
@@ -174,93 +174,104 @@ export default function EngageValuePage() {
   const hasData = allSnapshots.length > 0
 
   return (
-    <div className="p-6 space-y-6">
-      <h1 className="text-3xl font-semibold">EngageValue™ Impact</h1>
+    <div className="min-h-screen bg-gray-900 text-white p-6 space-y-6">
+      <h1 className="text-3xl font-semibold text-white">EngageValue™ Impact</h1>
 
       {!hasData ? (
-        <Card>
+        <Card className="bg-gray-800 border-gray-700">
           <CardContent className="p-6">
-            <p className="text-muted-foreground">EngageValue™ data will appear after first engagement analysis</p>
+            <p className="text-gray-400">EngageValue™ data will appear after first engagement analysis</p>
           </CardContent>
         </Card>
       ) : (
         <>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle>Total Attrition Exposure</CardTitle>
+                <CardTitle className="text-white">Total Attrition Exposure</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(totalExpectedLoss)}</p>
+              <CardContent className="p-6">
+                <p className="text-4xl font-bold text-red-500">{formatCurrency(totalExpectedLoss)}</p>
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-gray-800 border-gray-700">
               <CardHeader>
-                <CardTitle>Preventable Loss</CardTitle>
+                <CardTitle className="text-white">Preventable Loss</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-green-600">{formatCurrency(totalExpectedSavings)}</p>
+              <CardContent className="p-6">
+                <p className="text-4xl font-bold text-green-500">{formatCurrency(totalExpectedSavings)}</p>
               </CardContent>
             </Card>
           </div>
 
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle>Top Employees by Expected Loss</CardTitle>
+              <CardTitle className="text-white">Top Employees by Expected Loss</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {topSnapshots.map((snapshot) => (
-                  <div key={snapshot.employee_id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="flex-1">
-                      <h3 className="font-semibold">{(snapshot.employees as any)?.name || 'Unknown'}</h3>
-                      <p className="text-sm text-muted-foreground">{(snapshot.employees as any)?.position || 'Unknown'}</p>
-                    </div>
-                    <Badge variant="destructive">
-                      {formatCurrency(snapshot.estimated_attrition_cost)}
-                    </Badge>
-                  </div>
+                  <Card key={snapshot.employee_id} className="bg-gray-700 border-gray-600">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center text-white font-semibold">
+                            {((snapshot.employees as any)?.name || 'U').charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-white">{(snapshot.employees as any)?.name || 'Unknown'}</h3>
+                            <p className="text-sm text-gray-400">{(snapshot.employees as any)?.position || 'Unknown'}</p>
+                          </div>
+                        </div>
+                        <Badge className="bg-red-600 text-white">
+                          {formatCurrency(snapshot.estimated_attrition_cost)}
+                        </Badge>
+                      </div>
+                    </CardContent>
+                  </Card>
                 ))}
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gray-800 border-gray-700">
             <CardHeader>
-              <CardTitle>Cost Assumptions</CardTitle>
+              <CardTitle className="text-white">Cost Assumptions</CardTitle>
             </CardHeader>
             <CardContent>
-              <table className="w-full table-auto">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Role</th>
-                    <th className="text-left p-2">Country</th>
-                    <th className="text-left p-2">Avg Salary</th>
-                    <th className="text-left p-2">Replacement Cost %</th>
-                    <th className="text-left p-2">Ramp-up Months</th>
-                    <th className="text-left p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {costModels.map((model) => (
-                    <tr key={model.id} className="border-b">
-                      <td className="p-2">{model.role}</td>
-                      <td className="p-2">{model.country}</td>
-                      <td className="p-2">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(model.avg_salary)}
-                      </td>
-                      <td className="p-2">{model.replacement_cost_pct}%</td>
-                      <td className="p-2">{model.ramp_up_months}</td>
-                      <td className="p-2">
-                        <Button variant="secondary" onClick={() => handleEdit(model)}>
-                          Edit
-                        </Button>
-                      </td>
+              <div className="overflow-x-auto">
+                <table className="w-full table-auto">
+                  <thead className="sticky top-0 bg-gray-800">
+                    <tr className="border-b border-gray-600">
+                      <th className="text-left p-4 text-white font-semibold">Role</th>
+                      <th className="text-left p-4 text-white font-semibold">Country</th>
+                      <th className="text-left p-4 text-white font-semibold">Avg Salary</th>
+                      <th className="text-left p-4 text-white font-semibold">Replacement Cost %</th>
+                      <th className="text-left p-4 text-white font-semibold">Ramp-up Months</th>
+                      <th className="text-left p-4 text-white font-semibold">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {costModels.map((model) => (
+                      <tr key={model.id} className="border-b border-gray-600 hover:bg-gray-700">
+                        <td className="p-4 text-gray-300">{model.role}</td>
+                        <td className="p-4 text-gray-300">{model.country}</td>
+                        <td className="p-4 text-white font-semibold">
+                          {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(model.avg_salary)}
+                        </td>
+                        <td className="p-4 text-white font-semibold">{model.replacement_cost_pct}%</td>
+                        <td className="p-4 text-white font-semibold">{model.ramp_up_months}</td>
+                        <td className="p-4">
+                          <Button className="bg-teal-600 hover:bg-teal-700 text-white" onClick={() => handleEdit(model)}>
+                            Edit
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </CardContent>
           </Card>
         </>

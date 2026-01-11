@@ -130,89 +130,72 @@ export default function EmployeeDetailClient({
 
   return (
     <div className="p-6 space-y-6 max-w-6xl mx-auto">
-      <h1 className="text-3xl font-semibold">Employee Details</h1>
+      <h1 className="text-3xl font-semibold text-white">Employee Details</h1>
 
-      {/* Employee Profile */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Employee Profile</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <p><strong>Name:</strong> {employee.name}</p>
-          <p><strong>Email:</strong> {employee.email}</p>
-          <p><strong>Position:</strong> {employee.position}</p>
-          <p><strong>Department:</strong> {employee.department}</p>
-          <p><strong>Join Date:</strong> {formatDate(employee.join_date)}</p>
-        </CardContent>
-      </Card>
-
-      {/* Engagement Summary */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Engagement Summary</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {latestScore ? (
+      {/* Profile Header */}
+      <Card className="bg-gray-800 border-gray-700">
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold text-white">{employee.name}</h2>
+              <p className="text-gray-400">{employee.position} • {employee.department}</p>
+            </div>
+            {latestScore ? (
               <div className="flex items-center space-x-4">
-                <span className="text-2xl font-bold">{latestScore.score}%</span>
-                <Badge variant={
-                  getRiskColor(getRiskFromScore(latestScore.score)) === "green" ? "default" :
-                  getRiskColor(getRiskFromScore(latestScore.score)) === "yellow" ? "secondary" : "destructive"
+                <span className="text-2xl font-bold text-white">{latestScore.score}%</span>
+                <Badge className={
+                  getRiskFromScore(latestScore.score) === "low" ? "bg-green-600" :
+                  getRiskFromScore(latestScore.score) === "medium" ? "bg-yellow-600" : "bg-red-600"
                 }>
-                  {getRiskLabel(getRiskFromScore(latestScore.score))}
+                  {getRiskLabel(getRiskFromScore(latestScore.score))} Risk
                 </Badge>
               </div>
             ) : (
-              <p className="text-muted-foreground">No engagement data available</p>
+              <p className="text-gray-400">No engagement data</p>
             )}
+          </div>
         </CardContent>
       </Card>
 
       {/* EngageValue™ */}
       {attritionData ? (
-        <>
-          <Card className="border-red-500/30">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card className="bg-gray-800 border-red-500/30">
             <CardHeader>
-              <CardTitle>💰 EngageValue™ – Attrition Cost</CardTitle>
+              <CardTitle className="text-white">Attrition Cost</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-red-500 font-semibold">
+              <p className="text-red-500 font-semibold text-2xl">
                 Estimated Attrition Cost: {formatCurrency(attritionData.totalAttritionCost)}
               </p>
-              <p className="text-red-500 font-semibold">
-                Expected Loss: {formatCurrency(attritionData.expectedLoss)}
+              <p className="text-red-500 font-semibold text-2xl">
+                Expected Loss: {(latestScore?.risk_level.toLowerCase() === "low" || (attritionData.expectedLoss / attritionData.totalAttritionCost) <= 0.1) ? "Negligible" : formatCurrency(attritionData.expectedLoss)}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-green-500/30">
+          <Card className="bg-gray-800 border-green-500/30">
             <CardHeader>
-              <CardTitle>💰 EngageValue™ – ROI</CardTitle>
+              <CardTitle className="text-white">ROI & Savings</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-green-500 font-semibold">
+              <p className="text-green-500 font-semibold text-2xl">
                 Intervention Cost: {formatCurrency(attritionData.roiMetrics.interventionCost)}
               </p>
-              <p className="text-green-500 font-semibold">
+              <p className="text-green-500 font-semibold text-2xl">
                 Expected Savings: {formatCurrency(attritionData.roiMetrics.expectedSavings)}
               </p>
-              <p className="text-green-500 font-semibold">
-                ROI Multiple: {attritionData.roiMetrics.roiMultiple.toFixed(1)}x
-              </p>
+              <Badge className="bg-teal-600 text-white text-lg">
+                {attritionData.roiMetrics.roiMultiple.toFixed(1)}x ROI
+              </Badge>
             </CardContent>
           </Card>
-        </>
+        </div>
       ) : !hasEngageValue ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>EngageValue™</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground mb-4">No EngageValue™ data available for today.</p>
-            <Button onClick={() => setIsModalOpen(true)}>
-              ➕ Activate EngageValue™
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="text-center">
+          <Button onClick={() => setIsModalOpen(true)} className="bg-teal-600 hover:bg-teal-700 text-white text-lg px-8 py-4">
+            Activate EngageValue™
+          </Button>
+        </div>
       ) : null}
 
       {/* Engagement Health Diagnosis */}

@@ -101,47 +101,52 @@ export default async function EmployeeDashboardPage() {
   const riskLevel = engagementScore ? getRiskFromScore(engagementScore) : null
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+    <div className="min-h-screen bg-gray-900 text-white p-6 space-y-6 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold">{employee.name}'s Dashboard</h1>
+        <h1 className="text-3xl font-semibold text-white">{employee.name}'s Dashboard</h1>
         <LogoutButton />
       </div>
 
-      <Card>
+      <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle>Profile</CardTitle>
+          <CardTitle className="text-white">Profile</CardTitle>
         </CardHeader>
         <CardContent>
-          <p><strong>Name:</strong> {employee.name}</p>
-          <p><strong>Position:</strong> {employee.position}</p>
-          <p><strong>Join Date:</strong> {new Date(employee.join_date).toLocaleDateString()}</p>
+          <p className="text-gray-300"><strong className="text-white">Name:</strong> {employee.name}</p>
+          <p className="text-gray-300"><strong className="text-white">Position:</strong> {employee.position}</p>
+          <p className="text-gray-300"><strong className="text-white">Join Date:</strong> {new Date(employee.join_date).toLocaleDateString()}</p>
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle>Your Current Engagement Score</CardTitle>
+          <CardTitle className="text-white text-center">Your Engagement Score</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="text-center">
           {engagementScore !== null ? (
-            <div className="flex items-center justify-center space-x-4">
-              <div className="text-5xl font-bold">{engagementScore}%</div>
-              <Badge variant={
-                getRiskColor(riskLevel!) === "green" ? "default" :
-                getRiskColor(riskLevel!) === "yellow" ? "secondary" : "destructive"
+            <>
+              <div className="text-7xl font-bold text-white mb-4">{engagementScore}%</div>
+              <p className="text-gray-300 mb-4">
+                {riskLevel === "low" ? "You're doing great! Keep it up!" :
+                 riskLevel === "medium" ? "You're on the right track!" :
+                 "Let's work on improving your engagement."}
+              </p>
+              <Badge className={
+                riskLevel === "low" ? "bg-green-600" :
+                riskLevel === "medium" ? "bg-yellow-600" : "bg-red-600"
               }>
-                {getRiskLabel(riskLevel!)}
+                {getRiskLabel(riskLevel!)} Risk
               </Badge>
-            </div>
+            </>
           ) : (
-            <p className="text-muted-foreground text-center">No engagement data available yet</p>
+            <p className="text-gray-400">No engagement data available yet</p>
           )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="bg-gray-800 border-gray-700">
         <CardHeader>
-          <CardTitle>Engagement Survey</CardTitle>
+          <CardTitle className="text-white">Engagement Survey</CardTitle>
         </CardHeader>
         <CardContent>
           <EngagementSurvey />

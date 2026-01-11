@@ -275,17 +275,19 @@ export default async function HrEmployeeDetailPage({
   }
 
   return (
-    <EmployeeDetailClient
-      employee={employee}
-      latestScore={latestScore}
-      trendData={trendData}
-      surveyBreakdown={surveyBreakdown}
-      latestAlert={latestAlert}
-      riskHistory={riskHistory}
-      engagementForecast={engagementForecast}
-      scoreTrend={scoreTrend}
-      attritionData={attritionData}
-      hasEngageValue={hasEngageValue}
-    />
+    <div className="min-h-screen bg-gray-900 text-white">
+      <EmployeeDetailClient
+        employee={employee}
+        latestScore={latestScore}
+        trendData={trendData}
+        surveyBreakdown={surveyBreakdown}
+        latestAlert={latestAlert}
+        riskHistory={riskHistory}
+        engagementForecast={engagementForecast}
+        scoreTrend={scoreTrend}
+        attritionData={attritionData}
+        hasEngageValue={hasEngageValue}
+      />
+    </div>
   )
 }
