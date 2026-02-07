@@ -32,15 +32,15 @@ export default async function EngageValueSummaryCard() {
       <CardHeader>
         <CardTitle>💰 EngageValue™ Impact</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-3">
-        <p className="text-red-500 font-semibold">
+      <CardContent className="space-y-4 sm:space-y-6">
+        <p className="text-red-500 font-bold tracking-tight">
           Attrition Exposure: {formatCurrency(totalLoss)}
         </p>
-        <p className="text-green-500 font-semibold">
+        <p className="text-green-500 font-bold tracking-tight">
           Preventable Loss: {formatCurrency(totalSavings)}
         </p>
 
-        <Button asChild className="w-full">
+        <Button asChild className="w-full sm:w-auto mt-4">
           <Link href="/hr/dashboard/engagevalue">
             View EngageValue™ Details
           </Link>

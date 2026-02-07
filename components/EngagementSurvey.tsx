@@ -49,15 +49,15 @@ export function EngagementSurvey() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <p className="text-sm text-gray-400 text-center">
         Rate each statement from 1 (Strongly Disagree) to 5 (Strongly Agree)
       </p>
 
       {questions.map((question, i) => (
         <Card key={i} className="bg-gray-800 border-gray-700">
-          <CardContent className="p-4">
-            <div className="space-y-3">
+          <CardContent className="p-4 sm:p-6">
+            <div className="space-y-4 sm:space-y-6">
               <p className="font-medium text-white">{question}</p>
               <div className="flex items-center space-x-4">
                 <input
@@ -93,7 +93,7 @@ export function EngagementSurvey() {
       {error && <p className="text-red-500 text-center">{error}</p>}
 
       <div className="text-center">
-        <Button onClick={submitSurvey} disabled={submitting} className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-2">
+        <Button onClick={submitSurvey} disabled={submitting} className="w-full sm:w-auto py-3 px-4 text-base bg-teal-600 hover:bg-teal-700 text-white">
           {submitting ? "Submitting..." : "Submit Survey"}
         </Button>
       </div>

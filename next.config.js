@@ -1,11 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    turbo: false,
-  },
-  turbopack: {
-    root: process.cwd(),
-  },
+  turbopack: {}
 }
 
 module.exports = nextConfig

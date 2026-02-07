@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { getRiskFromScore, getRiskLabel, getRiskColor } from "@/lib/engagementRisk"
 import ActivateEngageValueModal from "@/components/ActivateEngageValueModal"
+import InterventionOutcomesCard from "@/components/InterventionOutcomesCard"
 
 type EmployeeWithScore = {
     id: string
@@ -27,6 +28,7 @@ export default function HrDashboardPage() {
    const [employees, setEmployees] = useState<EmployeeWithScore[]>([])
    const [loading, setLoading] = useState(true)
    const [modalEmployee, setModalEmployee] = useState<EmployeeWithScore | null>(null)
+   const [deptChartData, setDeptChartData] = useState<{ department: string; cost: number }[]>([])
    const router = useRouter()
 
   useEffect(() => {
@@ -108,6 +110,26 @@ export default function HrDashboardPage() {
       )
 
       setEmployees(employeesWithScores)
+
+      // Fetch Department Loss Data
+      const { data: deptSnapshots } = await supabase
+        .from("engagement_roi_snapshots")
+        .select("department, estimated_attrition_cost")
+
+      // Aggregate Department Risk
+      const deptMap: Record<string, number> = {}
+
+      deptSnapshots?.forEach(d => {
+        const dept = d.department || "Unknown"
+        deptMap[dept] = (deptMap[dept] || 0) + (d.estimated_attrition_cost || 0)
+      })
+
+      const chartData = Object.entries(deptMap).map(([department, cost]) => ({
+        department,
+        cost
+      }))
+
+      setDeptChartData(chartData)
       setLoading(false)
     }
 
@@ -137,6 +159,24 @@ export default function HrDashboardPage() {
           <Button asChild>
             <Link href="/hr/dashboard/engagevalue">View Cost Impact</Link>
           </Button>
+        </CardContent>
+      </Card>
+
+      <InterventionOutcomesCard />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Attrition Risk by Department</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={deptChartData}>
+              <XAxis dataKey="department" />
+              <YAxis />
+              <Tooltip />
+              <Bar dataKey="cost" fill="#ef4444" />
+            </BarChart>
+          </ResponsiveContainer>
         </CardContent>
       </Card>
 

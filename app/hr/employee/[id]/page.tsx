@@ -2,6 +2,7 @@ import { createSupabaseServerClient } from "@/lib/supabaseServer"
 import EmployeeDetailClient from "@/components/EmployeeDetailClient"
 import { forecastEngagement } from "@/lib/forecast/engagementForecast"
 import { computeAttritionProbability, computeAttritionCost, computeInterventionROI } from "@/lib/engagement/attritionCalculator"
+import { getInterventionsWithComparison } from "@/app/actions/interventions"
 
 export const dynamic = "force-dynamic"
 
@@ -45,6 +46,18 @@ type RiskAlert = {
   resolved: boolean
 }
 
+type Intervention = {
+  id: string
+  intervention_type: string
+  intervention_date: string
+  owner: string
+  notes: string | null
+}
+
+// Multi-Signal Risk Model Weights
+const surveyWeight = 0.5
+const attendanceWeight = 0.3
+const trendWeight = 0.2
 
 const formatDate = (d: string) => new Date(d).toISOString().split("T")[0]
 
@@ -99,8 +112,11 @@ export default async function HrEmployeeDetailPage({
   let trendData: TrendPoint[] = []
   let surveyBreakdown: { q1: number; q2: number; q3: number; q4: number; q5: number } | null = null
   let scoreTrend = 0
+  let survey_count = 0
+  let score_variance = 0
 
   if (surveys && surveys.length > 0) {
+    survey_count = surveys.length
     trendData = surveys.map((survey) => {
       const average = (survey.q1 + survey.q2 + survey.q3 + survey.q4 + survey.q5) / 5
       const score = Math.round(average * 20)
@@ -133,11 +149,63 @@ export default async function HrEmployeeDetailPage({
       const prevScore = trendData[trendData.length - 2].score
       scoreTrend = latestScore - prevScore
     }
+
+    // Calculate score variance
+    if (trendData.length > 1) {
+      const scores = trendData.map(d => d.score)
+      const mean = scores.reduce((a, b) => a + b, 0) / scores.length
+      score_variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length
+    }
+  }
+
+  // --- Forecast Confidence Logic ---
+  let confidence: "Low" | "Medium" | "High" = "Low"
+
+  if (survey_count >= 6 && score_variance < 50) {
+    confidence = "High"
+  } else if (survey_count >= 3) {
+    confidence = "Medium"
+  }
+
+  try {
+    await supabase.from("engagement_forecast_confidence").upsert({
+      employee_id: employeeId,
+      survey_count,
+      score_variance,
+      confidence_level: confidence
+    })
+    console.log("Forecast confidence saved:", confidence)
+  } catch (err) {
+    console.error("Forecast confidence save failed:", err)
   }
 
   // Fetch risk alerts for forecast (last 30 days)
   const thirtyDaysAgo = new Date()
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+
+  // --- Attendance Score (last 30 days) ---
+  let attendanceScore = 70 // fallback neutral
+
+  const { data: attendanceData } = await supabase
+    .from("employee_attendance")
+    .select("attendance_pct")
+    .eq("employee_id", employeeId)
+    .gte("date", thirtyDaysAgo.toISOString())
+
+  if (attendanceData && attendanceData.length > 0) {
+    attendanceScore =
+      attendanceData.reduce((sum, d) => sum + d.attendance_pct, 0) /
+      attendanceData.length
+  }
+
+  // --- Trend Score ---
+  let trendScore = 70
+
+  if (trendData.length >= 2) {
+    const diff = trendData[trendData.length - 1].score - trendData[0].score
+    trendScore = Math.max(30, Math.min(100, 70 + diff))
+  }
+
   const { data: riskAlertsData } = await supabase
     .from("risk_alerts")
     .select("*")
@@ -159,6 +227,33 @@ export default async function HrEmployeeDetailPage({
     .limit(5)
 
   const riskHistory = riskHistoryData || []
+
+  // Fetch interventions with comparison
+  const interventions = await getInterventionsWithComparison(employeeId)
+
+  // Fetch basic intervention data for read-only table
+  const { data: interventionsData } = await supabase
+    .from("engagement_interventions")
+    .select("id, intervention_type, intervention_date, owner, notes")
+    .eq("employee_id", employeeId)
+    .order("intervention_date", { ascending: false })
+
+  const basicInterventions: Intervention[] = interventionsData || []
+
+  // Fetch tasks for interventions
+  const { data: taskData } = await supabase
+    .from("intervention_tasks")
+    .select("*")
+    .in("intervention_id", basicInterventions.map(i => i.id))
+
+  const tasksByIntervention: Record<string, any[]> = {}
+
+  taskData?.forEach(task => {
+    if (!tasksByIntervention[task.intervention_id]) {
+      tasksByIntervention[task.intervention_id] = []
+    }
+    tasksByIntervention[task.intervention_id].push(task)
+  })
 
   // Calculate engagement forecast
   const engagementForecast = forecastEngagement(scores, riskAlerts)
@@ -210,10 +305,19 @@ export default async function HrEmployeeDetailPage({
     const oldestScore = last30Scores[last30Scores.length - 1]?.score || latestScoreValue
     const scoreDrop30Days = oldestScore - latestScoreValue
     const tenureMonths = Math.floor((new Date().getTime() - new Date(employee.join_date).getTime()) / (1000 * 60 * 60 * 24 * 30))
+
+    // --- Final Multi-Signal Engagement Score ---
+    const multiSignalScore =
+      latestScoreValue * surveyWeight +
+      attendanceScore * attendanceWeight +
+      trendScore * trendWeight
+
+    // Use multi-signal score for risk calculations
+    const scoreForRisk = Math.round(multiSignalScore)
     const riskLevel = latestScore.risk_level.toLowerCase() as "low" | "medium" | "high"
 
     const attritionProb = computeAttritionProbability({
-      engagementScore: latestScoreValue,
+      engagementScore: scoreForRisk,
       scoreDrop30Days,
       riskLevel,
       tenureMonths,
@@ -287,6 +391,12 @@ export default async function HrEmployeeDetailPage({
         scoreTrend={scoreTrend}
         attritionData={attritionData}
         hasEngageValue={hasEngageValue}
+        survey_count={survey_count}
+        score_variance={score_variance}
+        interventions={interventions}
+        basicInterventions={basicInterventions}
+        forecastConfidence={confidence}
+        tasksByIntervention={tasksByIntervention}
       />
     </div>
   )

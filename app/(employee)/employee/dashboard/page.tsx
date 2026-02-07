@@ -101,9 +101,9 @@ export default async function EmployeeDashboardPage() {
   const riskLevel = engagementScore ? getRiskFromScore(engagementScore) : null
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6 space-y-6 max-w-4xl mx-auto">
-      <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-semibold text-white">{employee.name}'s Dashboard</h1>
+    <div className="min-h-screen bg-gray-900 text-white p-4 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white">{employee.name}'s Dashboard</h1>
         <LogoutButton />
       </div>
 
@@ -111,7 +111,7 @@ export default async function EmployeeDashboardPage() {
         <CardHeader>
           <CardTitle className="text-white">Profile</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <p className="text-gray-300"><strong className="text-white">Name:</strong> {employee.name}</p>
           <p className="text-gray-300"><strong className="text-white">Position:</strong> {employee.position}</p>
           <p className="text-gray-300"><strong className="text-white">Join Date:</strong> {new Date(employee.join_date).toLocaleDateString()}</p>
@@ -122,10 +122,10 @@ export default async function EmployeeDashboardPage() {
         <CardHeader>
           <CardTitle className="text-white text-center">Your Engagement Score</CardTitle>
         </CardHeader>
-        <CardContent className="text-center">
+        <CardContent className="text-center p-6 sm:p-8">
           {engagementScore !== null ? (
             <>
-              <div className="text-7xl font-bold text-white mb-4">{engagementScore}%</div>
+              <div className="text-4xl sm:text-5xl font-bold text-white mb-4">{engagementScore}%</div>
               <p className="text-gray-300 mb-4">
                 {riskLevel === "low" ? "You're doing great! Keep it up!" :
                  riskLevel === "medium" ? "You're on the right track!" :
@@ -148,7 +148,7 @@ export default async function EmployeeDashboardPage() {
         <CardHeader>
           <CardTitle className="text-white">Engagement Survey</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 sm:p-6">
           <EngagementSurvey />
         </CardContent>
       </Card>
