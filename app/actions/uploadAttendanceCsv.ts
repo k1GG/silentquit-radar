@@ -1,150 +1,114 @@
-'use server'
+"use server"
 
-import { createSupabaseServerClient } from '@/lib/supabaseServer'
-import { revalidatePath } from 'next/cache'
-
-const ALLOWED_STATUSES = ['present', 'absent', 'wfh', 'leave'] as const
+import { createSupabaseServerClient } from "@/lib/supabaseServer"
+import { revalidatePath } from "next/cache"
 
 type UploadResult = {
-  inserted: number
-  skipped: number
+  success: boolean
+  processed: number
 }
 
-export async function uploadAttendanceCsv(formData: FormData): Promise<UploadResult> {
+const VALID_STATUSES = ["present", "absent", "wfh", "leave"]
+
+export async function uploadAttendanceCsv(
+  formData: FormData
+): Promise<UploadResult> {
   const supabase = await createSupabaseServerClient()
 
-  // Verify HR role
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    throw new Error('Unauthorized')
-  }
-
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('role')
-    .eq('id', session.user.id)
-    .single()
-
-  if (!profile || profile.role !== 'hr') {
-    throw new Error('Unauthorized')
-  }
-
-  // Get CSV file
-  const file = formData.get('file') as File
+  const file = formData.get("file") as File
   if (!file) {
-    throw new Error('No file provided')
+    throw new Error("No file uploaded")
   }
 
-  if (!file.name.toLowerCase().endsWith('.csv')) {
-    throw new Error('Only CSV files are allowed')
-  }
-
-  // Read and parse CSV
   const text = await file.text()
-  const lines = text.split('\n').filter(line => line.trim())
-  
+  const lines = text.trim().split("\n")
+
   if (lines.length < 2) {
-    throw new Error('CSV file must contain at least header and one data row')
+    return { success: true, processed: 0 }
   }
 
-  // Parse headers
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase())
-  const expectedHeaders = ['employee_email', 'attendance_date', 'status']
-  
-  for (const expectedHeader of expectedHeaders) {
-    if (!headers.includes(expectedHeader)) {
-      throw new Error(`Missing required header: ${expectedHeader}`)
-    }
+  const headers = lines[0].split(",").map(h => h.trim())
+
+  const emailIndex = headers.indexOf("employee_email")
+  const dateIndex = headers.indexOf("attendance_date")
+  const statusIndex = headers.indexOf("status")
+
+  if (emailIndex === -1) {
+    throw new Error("Missing required header: employee_email")
+  }
+  if (dateIndex === -1) {
+    throw new Error("Missing required header: attendance_date")
+  }
+  if (statusIndex === -1) {
+    throw new Error("Missing required header: status")
   }
 
-  const employeeEmailIndex = headers.indexOf('employee_email')
-  const attendanceDateIndex = headers.indexOf('attendance_date')
-  const statusIndex = headers.indexOf('status')
+  const records: {
+    employee_id: string
+    attendance_date: string
+    status: string
+  }[] = []
 
-  let inserted = 0
-  let skipped = 0
-
-  // Process data rows
   for (let i = 1; i < lines.length; i++) {
-    const line = lines[i].trim()
-    if (!line) continue
+    const cols = lines[i].split(",").map(c => c.trim())
 
-    try {
-      const values = line.split(',').map(v => v.trim())
-      
-      if (values.length < 3) {
-        skipped++
-        continue
-      }
+    const employeeEmail = cols[emailIndex]
+    const attendanceDate = cols[dateIndex]
+    const status = cols[statusIndex]?.toLowerCase()
 
-      const employeeEmail = values[employeeEmailIndex]
-      const attendanceDateStr = values[attendanceDateIndex]
-      const status = values[statusIndex].toLowerCase()
+    if (!employeeEmail || !attendanceDate || !status) continue
+    if (!VALID_STATUSES.includes(status)) continue
 
-      // Validate email
-      if (!employeeEmail || !employeeEmail.includes('@')) {
-        skipped++
-        continue
-      }
+    const { data: employee } = await supabase
+      .from("employees")
+      .select("id")
+      .eq("email", employeeEmail)
+      .single()
 
-      // Validate date format (YYYY-MM-DD)
-      const dateRegex = /^\d{4}-\d{2}-\d{2}$/
-      if (!dateRegex.test(attendanceDateStr)) {
-        skipped++
-        continue
-      }
+    if (!employee) continue
 
-      // Validate status
-      if (!ALLOWED_STATUSES.includes(status as any)) {
-        skipped++
-        continue
-      }
-
-      // Resolve employee_id from email
-      const { data: employee, error: employeeError } = await supabase
-        .from('employees')
-        .select('id')
-        .eq('email', employeeEmail)
-        .single()
-
-      if (employeeError || !employee) {
-        skipped++
-        continue
-      }
-
-      // Upsert attendance record
-      const { error: upsertError } = await supabase
-        .from('employee_attendance')
-        .upsert({
-          employee_id: employee.id,
-          attendance_date: attendanceDateStr,
-          status: status,
-          uploaded_by: session.user.id
-        }, {
-          onConflict: 'employee_id,attendance_date'
-        })
-
-      if (upsertError) {
-        skipped++
-        continue
-      }
-
-      inserted++
-
-    } catch (error) {
-      // Skip malformed rows silently
-      skipped++
-      continue
-    }
+    records.push({
+      employee_id: employee.id,
+      attendance_date: attendanceDate,
+      status,
+    })
   }
 
-  console.log(`Attendance upload completed: ${inserted} inserted, ${skipped} skipped`)
+  if (records.length === 0) {
+    return { success: true, processed: 0 }
+  }
 
-  // Revalidate relevant paths
-  revalidatePath('/hr/dashboard/engagevalue')
+  const { data: inserted, error } = await supabase
+    .from("engagement_attendance")
+    .insert(records)
+    .select()
+
+  if (error) {
+    console.error("Attendance insert error:", error)
+    throw new Error("Attendance insert failed")
+  }
+
+  // Create timeline events for absences
+  const absenceEvents =
+    inserted
+      ?.filter(r => r.status === "absent")
+      .map(r => ({
+        employee_id: r.employee_id,
+        event_type: "attendance_absent",
+        event_label: "Marked absent",
+        event_date: r.attendance_date,
+      })) || []
+
+  if (absenceEvents.length > 0) {
+    await supabase
+      .from("engagement_events")
+      .insert(absenceEvents)
+  }
+
+  revalidatePath("/hr/dashboard/attendance")
 
   return {
-    inserted,
-    skipped
+    success: true,
+    processed: inserted?.length || 0,
   }
 }

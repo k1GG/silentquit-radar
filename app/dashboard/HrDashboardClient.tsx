@@ -126,7 +126,12 @@ export default function HrDashboardClient() {
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <h1 className="text-lg sm:text-xl lg:text-2xl font-semibold text-white">HR Dashboard</h1>
-        <LogoutButton />
+        <div className="flex items-center space-x-2">
+          <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
+            <Link href="/hr/dashboard/attendance">Upload Attendance</Link>
+          </Button>
+          <LogoutButton />
+        </div>
       </div>
 
       {/* EngageValue Impact Card */}

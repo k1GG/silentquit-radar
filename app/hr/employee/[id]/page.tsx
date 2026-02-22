@@ -54,6 +54,15 @@ type Intervention = {
   notes: string | null
 }
 
+type EngagementEvent = {
+  id: string
+  employee_id: string
+  event_type: string
+  event_label: string
+  event_date: string
+  severity: string
+}
+
 // Multi-Signal Risk Model Weights
 const surveyWeight = 0.5
 const attendanceWeight = 0.3
@@ -187,15 +196,14 @@ export default async function HrEmployeeDetailPage({
   let attendanceScore = 70 // fallback neutral
 
   const { data: attendanceData } = await supabase
-    .from("employee_attendance")
-    .select("attendance_pct")
+    .from("engagement_attendance")
+    .select("status")
     .eq("employee_id", employeeId)
-    .gte("date", thirtyDaysAgo.toISOString())
+    .gte("attendance_date", thirtyDaysAgo.toISOString().split('T')[0])
 
   if (attendanceData && attendanceData.length > 0) {
-    attendanceScore =
-      attendanceData.reduce((sum, d) => sum + d.attendance_pct, 0) /
-      attendanceData.length
+    const presentCount = attendanceData.filter(a => a.status === 'present').length
+    attendanceScore = (presentCount / attendanceData.length) * 100
   }
 
   // --- Trend Score ---
@@ -378,6 +386,16 @@ export default async function HrEmployeeDetailPage({
     }
   }
 
+  // Fetch engagement events for timeline
+  const { data: engagementEventsData } = await supabase
+    .from("engagement_events")
+    .select("*")
+    .eq("employee_id", employeeId)
+    .order("event_date", { ascending: false })
+    .limit(10)
+
+  const engagementEvents: EngagementEvent[] = engagementEventsData || []
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       <EmployeeDetailClient
@@ -397,6 +415,7 @@ export default async function HrEmployeeDetailPage({
         basicInterventions={basicInterventions}
         forecastConfidence={confidence}
         tasksByIntervention={tasksByIntervention}
+        engagementEvents={engagementEvents}
       />
     </div>
   )

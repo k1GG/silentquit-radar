@@ -91,6 +91,14 @@ type RiskHistoryItem = {
   score_at_alert: number
 }
 
+type EngagementEvent = {
+  id: string
+  employee_id: string
+  event_type: string
+  event_label: string
+  event_date: string
+  severity: string
+}
 
 type Props = {
    employee: Employee | null
@@ -117,7 +125,8 @@ type Props = {
    basicInterventions: Intervention[]
    forecastConfidence?: "Low" | "Medium" | "High"
    tasksByIntervention: Record<string, any[]>
- }
+   engagementEvents: EngagementEvent[]
+}
 
  type Intervention = {
    id: string
@@ -143,7 +152,8 @@ export default function EmployeeDetailClient({
    interventions,
    basicInterventions,
    forecastConfidence,
-   tasksByIntervention
+   tasksByIntervention,
+   engagementEvents
 }: Props) {
    const router = useRouter()
    const [isModalOpen, setIsModalOpen] = useState(false)
@@ -466,6 +476,38 @@ export default function EmployeeDetailClient({
           </CardContent>
         </Card>
       )}
+
+      {/* Silent Quit Signal Timeline */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Silent Quit Signal Timeline</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 sm:p-6">
+          {engagementEvents.length > 0 ? (
+            <div className="space-y-4 sm:space-y-6">
+              {engagementEvents.map((event) => (
+                <div key={event.id} className="flex items-start gap-3">
+                  <div
+                    className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
+                      event.severity === "high"
+                        ? "bg-red-500"
+                        : event.severity === "medium"
+                        ? "bg-yellow-500"
+                        : "bg-gray-500"
+                    }`}
+                  />
+                  <div className="flex-1">
+                    <p className="font-medium">{event.event_label}</p>
+                    <p className="text-sm text-muted-foreground">{formatDate(event.event_date)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-muted-foreground">No risk signals detected yet</p>
+          )}
+        </CardContent>
+      </Card>
 
      {/* Intervention Tracker */}
      {employee && (

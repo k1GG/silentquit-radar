@@ -10,7 +10,6 @@ import CostAssumptionsPanel from '@/components/CostAssumptionsPanel'
 import ConfidenceIndicator from '@/components/ConfidenceIndicator'
 import ScenarioSimulator from '@/components/ScenarioSimulator'
 import InterventionOutcomesCard from '@/components/InterventionOutcomesCard'
-import AttendanceUploadCard from '@/components/AttendanceUploadCard'
 import { useToast } from '@/hooks/use-toast'
 
 type SnapshotWithEmployee = {
@@ -142,8 +141,6 @@ export default function EngageValuePage() {
           </div>
 
           <ConfidenceIndicator survey_count={allSnapshots.length} />
-
-          <AttendanceUploadCard />
 
           <InterventionOutcomesCard />
 

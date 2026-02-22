@@ -164,6 +164,20 @@ export default function HrDashboardPage() {
 
       <InterventionOutcomesCard />
 
+      <Card className="border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/20">
+        <CardHeader>
+          <CardTitle className="text-teal-900 dark:text-teal-100">📊 Attendance Management</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground mb-4">
+            Upload attendance data to track employee engagement and detect silent quit signals.
+          </p>
+          <Button asChild>
+            <Link href="/hr/dashboard/attendance">Upload Attendance</Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle>Attrition Risk by Department</CardTitle>
@@ -184,9 +198,14 @@ export default function HrDashboardPage() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>Employees</CardTitle>
-            <Button asChild>
-              <Link href="/hr/employees/new">Add Employee Detail</Link>
-            </Button>
+            <div className="flex items-center space-x-2">
+              <Button asChild>
+                <Link href="/hr/dashboard/attendance">Upload Attendance</Link>
+              </Button>
+              <Button asChild>
+                <Link href="/hr/employees/new">Add Employee Detail</Link>
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
