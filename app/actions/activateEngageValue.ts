@@ -8,15 +8,15 @@ export async function activateEngageValue(formData: FormData) {
   const supabase = await createSupabaseServerClient()
 
   // Verify HR role
-  const { data: { session } } = await supabase.auth.getSession()
-  if (!session) {
-    throw new Error('Unauthorized')
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) {
+    throw new Error("Unauthorized")
   }
 
   const { data: profile } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', session.user.id)
+    .eq('id', user.id)
     .single()
 
   if (!profile || profile.role !== 'hr') {
@@ -46,18 +46,24 @@ export async function activateEngageValue(formData: FormData) {
   }
 
   // Insert into engagement_scores
-  const { error: insertError } = await supabase
-    .from('engagement_scores')
+  const normalizedRisk =
+    riskLevel.charAt(0).toUpperCase() +
+    riskLevel.slice(1).toLowerCase()
+  const { data, error } = await supabase
+    .from("engagement_scores")
     .insert({
       employee_id: employeeId,
       score,
-      risk_level: riskLevel,
-      created_at: new Date().toISOString()
+      risk_level: normalizedRisk,
     })
+    .select()
 
-  if (insertError) {
-    throw new Error('Failed to insert engagement score')
-  }
+console.log("DEBUG engagement_scores insert data:", data)
+console.log("DEBUG engagement_scores insert error:", error)
+
+if (error) {
+  throw new Error(JSON.stringify(error))
+}
 
   // Fetch cost model
   const { data: costModel, error: costError } = await supabase

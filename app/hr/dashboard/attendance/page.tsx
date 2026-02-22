@@ -33,7 +33,7 @@ export default function AttendanceUploadPage() {
       formData.append("file", file)
 
       const result = await uploadAttendanceCsv(formData)
-      setStatus({ message: `Attendance uploaded: ${result.inserted} records processed`, type: "success" })
+      setStatus({ message: `Attendance uploaded: ${result.processed} records processed`, type: "success" })
       setFile(null)
     } catch (error) {
       setStatus({ message: error instanceof Error ? error.message : "Upload failed", type: "error" })
