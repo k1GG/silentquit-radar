@@ -11,7 +11,10 @@ import { useToast } from '@/hooks/use-toast'
 export default function AttendanceUploadCard() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [result, setResult] = useState<{ inserted: number; skipped: number } | null>(null)
+  const [result, setResult] = useState<{
+  success: boolean
+  processed: number
+} | null>(null)
   const { toast } = useToast()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
