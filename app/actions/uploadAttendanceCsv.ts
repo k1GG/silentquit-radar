@@ -3,7 +3,7 @@
 import { createSupabaseServerClient } from "@/lib/supabaseServer"
 import { revalidatePath } from "next/cache"
 
-type UploadResult = {
+export type UploadResult = {
   success: boolean
   processed: number
 }

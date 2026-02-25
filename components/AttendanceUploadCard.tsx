@@ -5,16 +5,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { uploadAttendanceCsv } from '@/app/actions/uploadAttendanceCsv'
+import { uploadAttendanceCsv, type UploadResult } from '@/app/actions/uploadAttendanceCsv'
 import { useToast } from '@/hooks/use-toast'
 
 export default function AttendanceUploadCard() {
   const [file, setFile] = useState<File | null>(null)
   const [uploading, setUploading] = useState(false)
-  const [result, setResult] = useState<{
-  success: boolean
-  processed: number
-} | null>(null)
+  const [result, setResult] = useState<UploadResult | null>(null)
   const { toast } = useToast()
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -55,7 +52,7 @@ export default function AttendanceUploadCard() {
 
       toast({
         title: 'Upload successful',
-        description: `Attendance uploaded: ${result.inserted} records processed`,
+        description: `Attendance uploaded: ${result.processed} records processed`,
       })
     } catch (error) {
       toast({
@@ -102,8 +99,7 @@ export default function AttendanceUploadCard() {
         {result && (
           <div className="p-3 bg-gray-700 rounded-md">
             <p className="text-sm text-gray-300">
-              Attendance uploaded: {result.inserted} records processed
-              {result.skipped > 0 && `, ${result.skipped} skipped`}
+              Attendance uploaded: {result.processed} records processed
             </p>
           </div>
         )}
